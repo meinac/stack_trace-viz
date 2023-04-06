@@ -12,8 +12,10 @@ module StackTrace
     LAYOUT_FILE = "../public/main.html.erb"
 
     class << self
-      def save_current!(file_path = nil, **extra)
-        HTML.new(StackTrace.current, **extra).save(file_path)
+      def save_current!(file_path: nil, **extra)
+        html = HTML.new
+        html.add(StackTrace.current, **extra)
+        html.save(file_path)
       end
 
       def as_json
