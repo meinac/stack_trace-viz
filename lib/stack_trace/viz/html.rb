@@ -3,11 +3,14 @@
 require "erb"
 require "json"
 require "securerandom"
+require "stringio"
 
 module StackTrace
   module Viz
     class HTML
       LAYOUT_FILE = "../../public/main.html.erb"
+      MAX_WRITE_BYTES = 64
+      MAX_JSON_NESTING = 1_000
 
       def initialize
         @traces = []
@@ -16,7 +19,9 @@ module StackTrace
       def save(file_path)
         file_path ||= default_file_path
 
-        File.open(file_path, "w") { |f| f.write(content) }
+        File.open(file_path, "w") do |f|
+          content_io.each_line(MAX_WRITE_BYTES) { |chunk| f.write(chunk) }
+        end
 
         file_path
       end
@@ -33,12 +38,16 @@ module StackTrace
 
       attr_reader :traces
 
+      def content_io
+        StringIO.new(content)
+      end
+
       def content
         erb.result_with_hash({ trace_data: trace_data })
       end
 
       def trace_data
-        JSON.generate(traces)
+        JSON.generate(traces, max_nesting: MAX_JSON_NESTING)
       end
 
       def erb
